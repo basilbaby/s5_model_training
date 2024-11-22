@@ -14,3 +14,5 @@ The model uses a simple but effective CNN architecture:
 Total parameters: < 100,000
 
 ## Requirements
+
+1. Create and activate virtual environment:
