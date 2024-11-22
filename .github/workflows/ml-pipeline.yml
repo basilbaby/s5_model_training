@@ -21,11 +21,11 @@ jobs:
         
     - name: Run tests
       run: |
-        pytest tests/test_model.py -v
+        PYTHONPATH=$PYTHONPATH:$(pwd) pytest tests/test_model.py -v
         
     - name: Train model
       run: |
-        python train.py --epochs 2
+        PYTHONPATH=$PYTHONPATH:$(pwd) python train.py --epochs 2
         
     - name: Upload trained model
       uses: actions/upload-artifact@v4
