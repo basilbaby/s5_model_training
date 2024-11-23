@@ -7,8 +7,13 @@ from datetime import datetime
 import os
 import platform
 import argparse
-from utils.augmentation import MNISTAugmentation
-from lion_pytorch import Lion
+
+# Make augmentation import optional
+try:
+    from utils.augmentation import MNISTAugmentation
+    AUGMENTATION_AVAILABLE = True
+except ImportError:
+    AUGMENTATION_AVAILABLE = False
 
 def get_device():
     if torch.backends.mps.is_available():
@@ -65,8 +70,16 @@ def train(num_epochs=1, save_samples=False):
     print(f"Parameter budget: {'OK' if param_count < 100000 else 'EXCEEDED'}")
     print("========================\n")
     
-    # Initialize augmentation
-    augmentation = MNISTAugmentation()
+    # Initialize augmentation only if available and requested
+    if save_samples and AUGMENTATION_AVAILABLE:
+        augmentation = MNISTAugmentation()
+        print("\nGenerating augmented samples with predictions...")
+        augmentation.save_augmented_samples(
+            datasets.MNIST('data', train=True, download=True),
+            model,
+            device,
+            num_samples=5
+        )
     
     # Load MNIST dataset with normalization
     transform = transforms.Compose([
@@ -76,16 +89,6 @@ def train(num_epochs=1, save_samples=False):
     
     train_dataset = datasets.MNIST('data', train=True, download=True, transform=transform)
     test_dataset = datasets.MNIST('data', train=False, download=True, transform=transform)
-    
-    # Save augmented samples if requested
-    if save_samples:
-        print("\nGenerating augmented samples with predictions...")
-        augmentation.save_augmented_samples(
-            datasets.MNIST('data', train=True, download=True),
-            model,
-            device,
-            num_samples=5
-        )
     
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=16, shuffle=True)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1000, shuffle=False)
