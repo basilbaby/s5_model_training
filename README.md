@@ -92,3 +92,23 @@ The GitHub Actions workflow:
 - Efficient: Uses batch normalization and dropout for stability
 - Flexible: Supports multiple compute devices
 - Robust: Includes comprehensive test suite
+
+## Data Augmentation
+
+The model uses the following augmentation techniques:
+- Random rotation (±15 degrees)
+- Random translation (±10%)
+- Random scaling (90-110%)
+
+To view sample augmentations:
+```bash
+python train.py --save-samples
+```
+
+This will save original and augmented versions of sample images in the `samples/` directory.
+
+## Model Performance
+- Parameters: 8,618 (under 25,000 limit)
+- Training Accuracy: ~89%
+- Test Accuracy: >98%
+- Single Epoch Training

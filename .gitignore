@@ -31,6 +31,7 @@ build/
 # Project specific
 data/
 models/
+samples/
 logs/
 *.log
 *.pth

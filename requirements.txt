@@ -1,4 +1,4 @@
---extra-index-url https://download.pytorch.org/whl/cu118
-torch
-torchvision
-pytest>=6.0.0 
+torch>=2.1.0
+torchvision>=0.16.0
+pytest>=6.0.0
+matplotlib>=3.7.1 
