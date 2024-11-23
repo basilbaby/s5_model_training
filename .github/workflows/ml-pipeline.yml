@@ -19,6 +19,12 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
+    - name: Run tests
+      run: |
+        PYTHONPATH=$PYTHONPATH:$(pwd) pytest tests/test_model.py -v
+      if: success()
+      continue-on-error: false
+        
     - name: Check model parameters
       run: |
         PYTHONPATH=$PYTHONPATH:$(pwd) python -c "
@@ -29,10 +35,14 @@ jobs:
         print(f'Total parameters: {params:,}')
         assert params < 25000, f'Model has {params:,} parameters, exceeding limit of 25,000'
         "
+      if: success()
+      continue-on-error: false
         
     - name: Train and test model (1 epoch)
       run: |
         PYTHONPATH=$PYTHONPATH:$(pwd) python train.py --epochs 1
+      if: success()
+      continue-on-error: false
         
     - name: Verify accuracy
       run: |
@@ -46,6 +56,8 @@ jobs:
         print(f'Final accuracy: {accuracy:.2f}%')
         assert accuracy > 95, f'Accuracy {accuracy:.2f}% is below required 95%'
         "
+      if: success()
+      continue-on-error: false
         
     - name: Upload trained model
       uses: actions/upload-artifact@v4
@@ -53,3 +65,4 @@ jobs:
         name: trained-model
         path: models/
         retention-days: 5
+      if: success()
