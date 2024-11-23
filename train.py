@@ -7,6 +7,8 @@ from datetime import datetime
 import os
 import platform
 import argparse
+from utils.augmentation import MNISTAugmentation
+from lion_pytorch import Lion
 
 def get_device():
     if torch.backends.mps.is_available():
@@ -51,7 +53,7 @@ def evaluate(model, test_loader, device):
     accuracy = 100 * correct / total
     return accuracy
 
-def train(num_epochs=1):
+def train(num_epochs=1, save_samples=False):
     # Set and print device info
     device = print_device_info()
     
@@ -63,7 +65,10 @@ def train(num_epochs=1):
     print(f"Parameter budget: {'OK' if param_count < 100000 else 'EXCEEDED'}")
     print("========================\n")
     
-    # Load MNIST dataset
+    # Initialize augmentation
+    augmentation = MNISTAugmentation()
+    
+    # Load MNIST dataset with normalization
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.1307,), (0.3081,))
@@ -72,20 +77,33 @@ def train(num_epochs=1):
     train_dataset = datasets.MNIST('data', train=True, download=True, transform=transform)
     test_dataset = datasets.MNIST('data', train=False, download=True, transform=transform)
     
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
+    # Save augmented samples if requested
+    if save_samples:
+        print("\nGenerating augmented samples with predictions...")
+        augmentation.save_augmented_samples(
+            datasets.MNIST('data', train=True, download=True),
+            model,
+            device,
+            num_samples=5
+        )
+    
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=16, shuffle=True)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1000, shuffle=False)
     
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.003, betas=(0.9, 0.999))
+    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, nesterov=True)
     
     # Modified learning rate scheduler
-    scheduler = optim.lr_scheduler.OneCycleLR(optimizer, 
-                                            max_lr=0.02,
-                                            epochs=num_epochs,
-                                            steps_per_epoch=len(train_loader),
-                                            pct_start=0.1,  # Faster warmup
-                                            div_factor=10.0,
-                                            final_div_factor=100.0)
+    scheduler = optim.lr_scheduler.OneCycleLR(
+        optimizer,
+        max_lr=0.1,  # Higher max learning rate
+        epochs=num_epochs,
+        steps_per_epoch=len(train_loader),
+        pct_start=0.1,  # Quick warmup
+        div_factor=10.0,
+        final_div_factor=50.0,
+        anneal_strategy='cos'
+    )
     
     print(f"Starting training for {num_epochs} epoch(s)...")
     # Train for specified number of epochs
@@ -100,8 +118,11 @@ def train(num_epochs=1):
             output = model(data)
             loss = criterion(output, target)
             loss.backward()
+            
+            # Gradient clipping
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            
             optimizer.step()
-            scheduler.step()
             
             # Calculate training accuracy
             _, predicted = torch.max(output.data, 1)
@@ -134,20 +155,25 @@ def train(num_epochs=1):
         'optimizer_state_dict': optimizer.state_dict(),
         'device_used': device_name,
         'epochs': num_epochs,
+        'final_train_accuracy': train_accuracy,
         'final_test_accuracy': test_accuracy,
         'parameters': param_count
     }, f'models/model_{device_name}_{timestamp}.pth')
     
-    print(f"\nTraining completed. Final test accuracy: {test_accuracy:.2f}%")
+    print(f"\nTraining completed.")
+    print(f"Final training accuracy: {train_accuracy:.2f}%")
+    print(f"Final test accuracy: {test_accuracy:.2f}%")
     print(f"Model saved with {device_name} configuration.")
 
 def main():
     parser = argparse.ArgumentParser(description='Train MNIST CNN model')
     parser.add_argument('--epochs', type=int, default=1,
                       help='number of epochs to train (default: 1)')
+    parser.add_argument('--save-samples', action='store_true',
+                      help='save augmented sample images')
     args = parser.parse_args()
     
-    train(num_epochs=args.epochs)
+    train(num_epochs=args.epochs, save_samples=args.save_samples)
 
 if __name__ == "__main__":
     main() 

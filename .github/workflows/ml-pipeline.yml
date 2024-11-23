@@ -52,9 +52,12 @@ jobs:
         import torch
         latest_model = max(glob.glob('models/*.pth'), key=os.path.getctime)
         checkpoint = torch.load(latest_model)
-        accuracy = checkpoint['final_test_accuracy']
-        print(f'Final accuracy: {accuracy:.2f}%')
-        assert accuracy > 95, f'Accuracy {accuracy:.2f}% is below required 95%'
+        train_accuracy = checkpoint.get('final_train_accuracy', 0)
+        test_accuracy = checkpoint['final_test_accuracy']
+        print(f'Final training accuracy: {train_accuracy:.2f}%')
+        print(f'Final test accuracy: {test_accuracy:.2f}%')
+        assert test_accuracy > 95, f'Test accuracy {test_accuracy:.2f}% is below required 95%'
+        assert train_accuracy > 90, f'Training accuracy {train_accuracy:.2f}% is below required 90%'
         "
       if: success()
       continue-on-error: false
