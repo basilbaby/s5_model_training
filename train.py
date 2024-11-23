@@ -15,6 +15,9 @@ def get_device():
         return torch.device("cuda")  # NVIDIA GPU
     return torch.device("cpu")      # Fallback to CPU
 
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
 def print_device_info():
     device = get_device()
     print("\n=== Device Information ===")
@@ -33,9 +36,32 @@ def print_device_info():
     print("========================\n")
     return device
 
+def evaluate(model, test_loader, device):
+    model.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for data, target in test_loader:
+            data, target = data.to(device), target.to(device)
+            outputs = model(data)
+            _, predicted = torch.max(outputs.data, 1)
+            total += target.size(0)
+            correct += (predicted == target).sum().item()
+    
+    accuracy = 100 * correct / total
+    return accuracy
+
 def train(num_epochs=1):
     # Set and print device info
     device = print_device_info()
+    
+    # Initialize model and print parameter count
+    model = SimpleCNN().to(device)
+    param_count = count_parameters(model)
+    print(f"=== Model Information ===")
+    print(f"Total trainable parameters: {param_count:,}")
+    print(f"Parameter budget: {'OK' if param_count < 100000 else 'EXCEEDED'}")
+    print("========================\n")
     
     # Load MNIST dataset
     transform = transforms.Compose([
@@ -44,18 +70,30 @@ def train(num_epochs=1):
     ])
     
     train_dataset = datasets.MNIST('data', train=True, download=True, transform=transform)
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
+    test_dataset = datasets.MNIST('data', train=False, download=True, transform=transform)
     
-    # Initialize model
-    model = SimpleCNN().to(device)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1000, shuffle=False)
+    
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=0.003, betas=(0.9, 0.999))
+    
+    # Modified learning rate scheduler
+    scheduler = optim.lr_scheduler.OneCycleLR(optimizer, 
+                                            max_lr=0.02,
+                                            epochs=num_epochs,
+                                            steps_per_epoch=len(train_loader),
+                                            pct_start=0.1,  # Faster warmup
+                                            div_factor=10.0,
+                                            final_div_factor=100.0)
     
     print(f"Starting training for {num_epochs} epoch(s)...")
     # Train for specified number of epochs
     model.train()
     for epoch in range(num_epochs):
         running_loss = 0.0
+        correct = 0
+        total = 0
         for batch_idx, (data, target) in enumerate(train_loader):
             data, target = data.to(device), target.to(device)
             optimizer.zero_grad()
@@ -63,15 +101,28 @@ def train(num_epochs=1):
             loss = criterion(output, target)
             loss.backward()
             optimizer.step()
+            scheduler.step()
+            
+            # Calculate training accuracy
+            _, predicted = torch.max(output.data, 1)
+            total += target.size(0)
+            correct += (predicted == target).sum().item()
             
             running_loss += loss.item()
             if batch_idx % 100 == 0:
+                train_accuracy = 100 * correct / total
                 print(f'Epoch {epoch+1}/{num_epochs} - Batch {batch_idx}/{len(train_loader)}, '
-                      f'Loss: {loss.item():.4f}')
+                      f'Loss: {loss.item():.4f}, Training Accuracy: {train_accuracy:.2f}%')
         
-        # Print epoch statistics
+        # Calculate epoch statistics
         epoch_loss = running_loss / len(train_loader)
-        print(f'Epoch {epoch+1}/{num_epochs} completed. Average loss: {epoch_loss:.4f}')
+        train_accuracy = 100 * correct / total
+        test_accuracy = evaluate(model, test_loader, device)
+        
+        print(f'Epoch {epoch+1}/{num_epochs} completed:')
+        print(f'Average Loss: {epoch_loss:.4f}')
+        print(f'Training Accuracy: {train_accuracy:.2f}%')
+        print(f'Test Accuracy: {test_accuracy:.2f}%\n')
     
     # Save model with timestamp and device info
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -83,9 +134,12 @@ def train(num_epochs=1):
         'optimizer_state_dict': optimizer.state_dict(),
         'device_used': device_name,
         'epochs': num_epochs,
+        'final_test_accuracy': test_accuracy,
+        'parameters': param_count
     }, f'models/model_{device_name}_{timestamp}.pth')
     
-    print(f"\nModel saved with {device_name} configuration.")
+    print(f"\nTraining completed. Final test accuracy: {test_accuracy:.2f}%")
+    print(f"Model saved with {device_name} configuration.")
 
 def main():
     parser = argparse.ArgumentParser(description='Train MNIST CNN model')
