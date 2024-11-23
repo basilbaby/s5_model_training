@@ -13,9 +13,7 @@ The model uses a simple but effective CNN architecture:
 
 Total parameters: < 25,000
 
-## Setup
-
-1. Create and activate virtual environment
+## Create and activate virtual environment
 
 ```
 bash
@@ -23,7 +21,7 @@ python -m venv venv
 source venv/bin/activate # On Linux/Mac
 or
 .\venv\Scripts\activate # On Windows
-
+```
 
 ## Install dependencies
 
