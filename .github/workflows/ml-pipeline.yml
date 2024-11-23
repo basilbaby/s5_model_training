@@ -37,6 +37,7 @@ jobs:
     - name: Verify accuracy
       run: |
         PYTHONPATH=$PYTHONPATH:$(pwd) python -c "
+        import os
         import glob
         import torch
         latest_model = max(glob.glob('models/*.pth'), key=os.path.getctime)
