@@ -1,6 +1,6 @@
 # MNIST CNN Classifier
 
-[![ML Pipeline](https://github.com/basilbaby112/s5_model_training/actions/workflows/ml-pipeline.yml/badge.svg)](https://github.com/basilbaby112/s5_model_training/actions/workflows/ml-pipeline.yml)
+[![ML Pipeline](https://github.com/basilbaby/s5_model_training/actions/workflows/ml-pipeline.yml/badge.svg)](https://github.com/basilbaby/s5_model_training/actions/workflows/ml-pipeline.yml)
 
 A lightweight CNN model for MNIST digit classification that achieves >95% accuracy while maintaining less than 25,000 parameters in a single epoch.
 
