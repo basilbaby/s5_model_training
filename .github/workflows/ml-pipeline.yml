@@ -56,8 +56,8 @@ jobs:
         test_accuracy = checkpoint['final_test_accuracy']
         print(f'Final training accuracy: {train_accuracy:.2f}%')
         print(f'Final test accuracy: {test_accuracy:.2f}%')
+        assert train_accuracy > 95, f'Training accuracy {train_accuracy:.2f}% is below required 95%'
         assert test_accuracy > 95, f'Test accuracy {test_accuracy:.2f}% is below required 95%'
-        assert train_accuracy > 90, f'Training accuracy {train_accuracy:.2f}% is below required 90%'
         "
       if: success()
       continue-on-error: false
