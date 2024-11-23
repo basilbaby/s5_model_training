@@ -4,21 +4,21 @@ import torch.nn as nn
 class SimpleCNN(nn.Module):
     def __init__(self):
         super(SimpleCNN, self).__init__()
-        # First convolutional layer - increased features but still under limit
-        self.conv1 = nn.Conv2d(1, 8, kernel_size=3, padding=1)
-        self.bn1 = nn.BatchNorm2d(8, track_running_stats=False)
+        # First convolutional layer - minimal features
+        self.conv1 = nn.Conv2d(1, 4, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm2d(4, track_running_stats=False)
         
         # Second convolutional layer
-        self.conv2 = nn.Conv2d(8, 16, kernel_size=3, padding=1)
-        self.bn2 = nn.BatchNorm2d(16, track_running_stats=False)
+        self.conv2 = nn.Conv2d(4, 8, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm2d(8, track_running_stats=False)
         
         # Pooling and dropout
         self.pool = nn.MaxPool2d(2, 2)
         self.dropout = nn.Dropout(0.1)
         
-        # Fully connected layers
-        self.fc1 = nn.Linear(16 * 7 * 7, 64)
-        self.fc2 = nn.Linear(64, 10)
+        # Fully connected layers - reduced sizes
+        self.fc1 = nn.Linear(8 * 7 * 7, 32)
+        self.fc2 = nn.Linear(32, 10)
         
         # Activation
         self.relu = nn.ReLU()
@@ -38,7 +38,7 @@ class SimpleCNN(nn.Module):
         x = self.dropout(x)
         
         # Fully connected layers
-        x = x.view(-1, 16 * 7 * 7)
+        x = x.view(-1, 8 * 7 * 7)
         x = self.fc1(x)
         x = self.relu(x)
         x = self.dropout(x)
