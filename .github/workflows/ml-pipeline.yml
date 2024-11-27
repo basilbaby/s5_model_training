@@ -54,6 +54,7 @@ jobs:
         echo "Verifying training results..."
         python -c "
         import glob
+        import os
         import torch
         latest_model = max(glob.glob('models/*.pth'), key=os.path.getctime)
         checkpoint = torch.load(latest_model)
