@@ -23,8 +23,48 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
-    - name: Run ML Pipeline
+    - name: Run Tests
       run: |
+        echo "Running model tests..."
+        PYTHONPATH=$PYTHONPATH:$(pwd) pytest tests/test_model.py -v
+        
+    - name: Verify Model Parameters
+      run: |
+        echo "Verifying model parameters..."
+        python -c "
+        from model.network import SimpleCNN
+        model = SimpleCNN()
+        params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print(f'Total parameters: {params:,}')
+        assert params < 25000, f'Model has {params:,} parameters, exceeding limit of 25,000'
+        "
+        
+    - name: Run Augmentation Demo
+      run: |
+        echo "Running augmentation demo..."
+        python train.py --augment-demo --num-samples 2 --num-augmentations 3
+        
+    - name: Train Model
+      run: |
+        echo "Training model..."
+        python train.py --epochs 1
+        
+    - name: Verify Training Results
+      run: |
+        echo "Verifying training results..."
+        python -c "
+        import glob
+        import torch
+        latest_model = max(glob.glob('models/*.pth'), key=os.path.getctime)
+        checkpoint = torch.load(latest_model)
+        accuracy = checkpoint['final_test_accuracy']
+        print(f'Final test accuracy: {accuracy:.2f}%')
+        assert accuracy > 90, f'Model accuracy {accuracy:.2f}% is below target'
+        "
+        
+    - name: Run Complete Pipeline
+      run: |
+        echo "Running complete pipeline..."
         python run_pipeline.py --epochs 1 --aug-samples 2 --aug-per-sample 3
         
     - name: Upload Artifacts
@@ -34,4 +74,16 @@ jobs:
         path: |
           samples/
           models/
+          .pytest_cache/
+          test-results/
         retention-days: 5
+
+    - name: Pipeline Summary
+      run: |
+        echo "=== Pipeline Summary ==="
+        echo "✓ Model parameters verified (< 25,000)"
+        echo "✓ Tests completed"
+        echo "✓ Augmentation demo generated"
+        echo "✓ Model trained"
+        echo "✓ Training results verified"
+        echo "✓ Artifacts uploaded"
