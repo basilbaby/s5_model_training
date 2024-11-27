@@ -1,4 +1,5 @@
---extra-index-url https://download.pytorch.org/whl/cu118
+--extra-index-url https://download.pytorch.org/whl/nightly/cpu
 torch
 torchvision
-pytest>=6.0.0 
+torchaudio
+pytest
