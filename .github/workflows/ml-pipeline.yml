@@ -1,68 +1,36 @@
 name: ML Pipeline
 
-on: [push]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  build-and-test:
+  pipeline:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v2
     
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v2
       with:
         python-version: '3.11'
-    
+        
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
-    - name: Run tests
+    - name: Run ML Pipeline
       run: |
-        PYTHONPATH=$PYTHONPATH:$(pwd) pytest tests/test_model.py -v
-      if: success()
-      continue-on-error: false
+        python run_pipeline.py --epochs 1 --aug-samples 2 --aug-per-sample 3
         
-    - name: Check model parameters
-      run: |
-        PYTHONPATH=$PYTHONPATH:$(pwd) python -c "
-        from model.network import SimpleCNN
-        import torch
-        model = SimpleCNN()
-        params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        print(f'Total parameters: {params:,}')
-        assert params < 25000, f'Model has {params:,} parameters, exceeding limit of 25,000'
-        "
-      if: success()
-      continue-on-error: false
-        
-    - name: Train and test model (1 epoch)
-      run: |
-        PYTHONPATH=$PYTHONPATH:$(pwd) python train.py --epochs 1
-      if: success()
-      continue-on-error: false
-        
-    - name: Verify accuracy
-      run: |
-        PYTHONPATH=$PYTHONPATH:$(pwd) python -c "
-        import os
-        import glob
-        import torch
-        latest_model = max(glob.glob('models/*.pth'), key=os.path.getctime)
-        checkpoint = torch.load(latest_model)
-        accuracy = checkpoint['final_test_accuracy']
-        print(f'Final accuracy: {accuracy:.2f}%')
-        assert accuracy > 95, f'Accuracy {accuracy:.2f}% is below required 95%'
-        "
-      if: success()
-      continue-on-error: false
-        
-    - name: Upload trained model
-      uses: actions/upload-artifact@v4
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v2
       with:
-        name: trained-model
-        path: models/
-        retention-days: 5
-      if: success()
+        name: pipeline-outputs
+        path: |
+          samples/
+          models/

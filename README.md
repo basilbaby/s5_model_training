@@ -1,19 +1,31 @@
-# MNIST CNN Classifier
+# MNIST Training Pipeline
 
-[![ML Pipeline](https://github.com/basilbaby/s5_model_training/actions/workflows/ml-pipeline.yml/badge.svg)](https://github.com/basilbaby/s5_model_training/actions/workflows/ml-pipeline.yml)
+A comprehensive ML pipeline for MNIST digit classification using PyTorch, featuring hybrid CPU-GPU processing and data augmentation visualization.
 
-A lightweight CNN model for MNIST digit classification that achieves >95% accuracy while maintaining less than 25,000 parameters in a single epoch.
+## Features
+
+- **Hybrid CPU-GPU Processing**: Efficiently utilizes both CPU and GPU for different parts of the network
+- **Data Augmentation Visualization**: Visual demonstration of augmentation techniques
+- **Parameter-Efficient Model**: CNN architecture with <25,000 parameters
+- **Automated Pipeline**: Complete training workflow with augmentation demos
+- **CI/CD Integration**: GitHub Actions workflow for automated testing and artifact collection
 
 ## Model Architecture
 
-The model uses a simple but effective CNN architecture:
-- 2 Convolutional layers (8 -> 16 channels)
-- Batch Normalization for training stability
-- MaxPooling for dimension reduction
-- Dropout (0.1) for regularization
-- 2 Fully connected layers (784 -> 64 -> 10)
+- 3-layer CNN with progressive channel growth (10->20->28)
+- Batch Normalization and ReLU activation
+- Strategic dropout (0.15)
+- Hybrid computation:
+  - Early layers (conv1, conv2) on GPU
+  - Later layers (conv3, FC) on CPU
+- Total parameters: ~23,000
 
-Total parameters: < 25,000
+## Requirements
+
+```
+bash
+pip install -r requirements.txt
+```
 
 ## Create and activate virtual environment
 
@@ -23,12 +35,6 @@ python -m venv venv
 source venv/bin/activate # On Linux/Mac
 or
 .\venv\Scripts\activate # On Windows
-```
-
-## Install dependencies
-
-```
-pip install -r requirements.txt
 ```
 
 ## Training
@@ -42,6 +48,28 @@ Train for multiple epochs:
 ```
 PYTHONPATH=$PYTHONPATH:$(pwd) python train.py --epochs 5
 ```
+## Usage
+
+### Run Complete Pipeline
+
+```
+bash
+python run_pipeline.py --epochs 1 --aug-samples 3 --aug-per-sample 5
+```
+
+### Training Only
+
+```
+bash
+python train.py --epochs 1
+```
+
+### Augmentation Demo Only
+
+```
+bash
+python run_pipeline.py --aug-samples 3 --aug-per-sample 5
+```
 
 ## Testing
 
@@ -49,6 +77,23 @@ Run the test suite:
 ```
 PYTHONPATH=$PYTHONPATH:$(pwd) pytest tests/test_model.py -v
 ```
+
+## Directory Structure
+```
+school_of_ai/
+├── s5_model_training/
+│ ├── model/
+│ ├── utils/
+│ ├── tests/
+│ ├── .github/
+│ ├── models/
+│ ├── samples/
+│ ├── requirements.txt
+│ ├── train.py
+│ ├── run_pipeline.py
+│ └── README.md
+```
+
 
 
 The tests verify that the model:

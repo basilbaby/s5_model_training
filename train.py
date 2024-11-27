@@ -7,6 +7,7 @@ from datetime import datetime
 import os
 import platform
 import argparse
+from utils.augmentation import demo_augmentations
 
 def get_devices():
     devices = {
@@ -172,12 +173,34 @@ def train(num_epochs=1):
     print(f"Model saved with {device_name} configuration.")
 
 def main():
-    parser = argparse.ArgumentParser(description='Train MNIST CNN model')
-    parser.add_argument('--epochs', type=int, default=1,
+    parser = argparse.ArgumentParser(description='Train MNIST CNN model or run augmentation demo')
+    
+    # Add mutually exclusive group for train vs demo mode
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--epochs', type=int, default=1,
                       help='number of epochs to train (default: 1)')
+    group.add_argument('--augment-demo', action='store_true',
+                      help='run augmentation demonstration')
+    
+    # Add demo-specific arguments
+    parser.add_argument('--num-samples', type=int, default=3,
+                      help='number of samples for augmentation demo (default: 3)')
+    parser.add_argument('--num-augmentations', type=int, default=5,
+                      help='number of augmentations per sample (default: 5)')
+    
     args = parser.parse_args()
     
-    train(num_epochs=args.epochs)
+    if args.augment_demo:
+        # Load dataset with basic transform for demo
+        transform = transforms.Compose([
+            transforms.ToTensor()
+        ])
+        dataset = datasets.MNIST('data', train=True, download=True, transform=transform)
+        demo_augmentations(dataset, 
+                         num_samples=args.num_samples,
+                         num_augmentations=args.num_augmentations)
+    else:
+        train(num_epochs=args.epochs)
 
 if __name__ == "__main__":
     main() 
